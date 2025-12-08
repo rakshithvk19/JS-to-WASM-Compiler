@@ -190,8 +190,17 @@ impl CodeGen {
                 }
             }
             StmtKind::Return(expr) => {
-                self.gen_expr(expr, vars);
-                self.output.push("    return".to_string());
+                if let Expr::Call(name, args) = expr {
+                    // Tail call - use return_call
+                    for arg in args {
+                        self.gen_expr(arg, vars);
+                    }
+                    self.output.push(format!("    return_call ${}", name));
+                } else {
+                    // Normal return
+                    self.gen_expr(expr, vars);
+                    self.output.push("    return".to_string());
+                }
             }
             StmtKind::Expr(expr) => {
                 self.gen_expr(expr, vars);

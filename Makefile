@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead
+.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail
 
 COMPILER = ./target/release/compiler
 
@@ -23,7 +23,7 @@ test: build
 	@echo ""
 	@echo "=== Testing Ackermann ==="
 	@$(COMPILER) tests/ackermann.js > tests/ackermann.wat
-	@result=$$(wasmtime tests/ackermann.wat --invoke _start 2>&1 | tail -1); \
+	@result=$$(wasmtime --wasm tail-call tests/ackermann.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "125" ]; then echo "PASS (got 125)"; else echo "FAIL (expected 125, got $$result)"; exit 1; fi
 	@echo ""
 	@echo "=== Testing Const Reassignment Error ==="
@@ -43,7 +43,6 @@ test: build
 	fi
 	@echo ""
 	@echo "=== Testing Dead Code Elimination ==="
-	@# Verifies: code after 'return' is removed (y, z variables should not appear in .wat)
 	@$(COMPILER) tests/dead_code.js > tests/dead_code.wat
 	@result=$$(wasmtime tests/dead_code.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "5" ]; then \
@@ -54,6 +53,14 @@ test: build
 		fi \
 	else \
 		echo "FAIL (expected 5, got $$result)"; exit 1; \
+	fi
+	@echo ""
+	@echo "=== Testing Tail Call Elimination ==="
+	@$(COMPILER) tests/ackermann.js > tests/ackermann.wat
+	@if grep -q "return_call" tests/ackermann.wat; then \
+		echo "PASS (tail calls detected in generated WAT)"; \
+	else \
+		echo "FAIL (no return_call instructions found)"; exit 1; \
 	fi
 	@echo ""
 	@echo "=== All tests passed ==="
@@ -71,7 +78,7 @@ test-gcd: build
 
 test-ack: build
 	@$(COMPILER) tests/ackermann.js > tests/ackermann.wat
-	@result=$$(wasmtime tests/ackermann.wat --invoke _start 2>&1 | tail -1); \
+	@result=$$(wasmtime --wasm tail-call tests/ackermann.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "125" ]; then echo "PASS (got 125)"; else echo "FAIL (expected 125, got $$result)"; exit 1; fi
 
 test-const: build
@@ -86,8 +93,6 @@ test-const: build
 	fi
 
 # Constant folding test
-# Verifies: 3 + 4 * 2 = 11 and 10 - 2 = 8 are computed at compile time
-# Check .wat file for "i32.const 11" and "i32.const 8" instead of multiple operations
 test-fold: build
 	@echo "=== Testing Constant Folding ==="
 	@$(COMPILER) tests/const_fold.js > tests/const_fold.wat
@@ -97,7 +102,6 @@ test-fold: build
 			echo "PASS (got 19, constants folded)"; \
 			echo ""; \
 			echo "Verification: check tests/const_fold.wat for 'i32.const 11' and 'i32.const 8'"; \
-			echo "These values were computed at compile time instead of runtime."; \
 		else \
 			echo "FAIL (got 19, but constants not folded)"; exit 1; \
 		fi \
@@ -106,8 +110,6 @@ test-fold: build
 	fi
 
 # Dead code elimination test
-# Verifies: code after 'return' statement is removed
-# Check .wat file: variables y and z should NOT appear since they're after return
 test-dead: build
 	@echo "=== Testing Dead Code Elimination ==="
 	@$(COMPILER) tests/dead_code.js > tests/dead_code.wat
@@ -123,6 +125,24 @@ test-dead: build
 		fi \
 	else \
 		echo "FAIL (expected 5, got $$result)"; exit 1; \
+	fi
+
+# Tail call elimination test
+# Verifies: return_call is used instead of call + return for tail-position calls
+test-tail: build
+	@echo "=== Testing Tail Call Elimination ==="
+	@$(COMPILER) tests/ackermann.js > tests/ackermann.wat
+	@if grep -q "return_call" tests/ackermann.wat; then \
+		result=$$(wasmtime --wasm tail-call tests/ackermann.wat --invoke _start 2>&1 | tail -1); \
+		if [ "$$result" = "125" ]; then \
+			echo "PASS (got 125, tail calls optimized)"; \
+			echo ""; \
+			echo "Verification: check tests/ackermann.wat for 'return_call' instructions"; \
+		else \
+			echo "FAIL (expected 125, got $$result)"; exit 1; \
+		fi \
+	else \
+		echo "FAIL (no return_call instructions found)"; exit 1; \
 	fi
 
 clean:

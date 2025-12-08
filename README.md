@@ -2,6 +2,15 @@
 
 A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Zero dependencies.
 
+## Supported Language Subset
+
+- Integer arithmetic: `+ - * / % == != < > <= >= !`
+- Variable declarations: `let` and `const` (with immutability enforcement)
+- Control flow: `if/else`, `while`
+- Functions with parameters and return values
+- Block statements `{ ... }`
+- All values are 32-bit signed integers (i32)
+
 ## Requirements
 
 - Rust (cargo)
@@ -27,6 +36,9 @@ make run FILE=input.js > output.wat
 
 ```bash
 wasmtime output.wat --invoke _start
+
+# For tail-call optimized code
+wasmtime --wasm tail-call output.wat --invoke _start
 ```
 
 ## Testing
@@ -41,6 +53,7 @@ make test-ack      # Ackermann (expects 125)
 make test-const    # Const reassignment error
 make test-fold     # Constant folding optimization
 make test-dead     # Dead code elimination
+make test-tail     # Tail call elimination
 ```
 
 ## Architecture
@@ -82,6 +95,16 @@ function test() {
 }
 ```
 
+### Tail Call Elimination
+Optimizes recursive calls in tail position using `return_call` instruction, preventing stack overflow for deep recursion.
+
+```javascript
+function ack(m, n) {
+  if (n == 0) return ack(m - 1, 1);  // Uses return_call instead of call + return
+  ...
+}
+```
+
 ### Const Immutability
 Enforces `const` variables cannot be reassigned.
 
@@ -110,6 +133,18 @@ local.set $x
 | `const_error.js` | Const reassignment detection | Panic |
 | `const_fold.js` | Constant folding verification | 19 |
 | `dead_code.js` | Dead code elimination | 5 |
+
+## Future Improvements
+
+- [ ] Negative number literals (`-5` in lexer)
+- [ ] Multi-line comments (`/* ... */`)
+- [ ] Logical AND/OR operators (`&&`, `||`)
+- [ ] For loops
+- [ ] Break/Continue statements
+- [ ] Better error messages with line numbers
+- [ ] Floating point numbers (f64)
+- [ ] Arrays
+- [ ] Strings
 
 ## License
 
