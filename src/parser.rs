@@ -186,7 +186,36 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Expr {
-        self.parse_equality()
+        self.parse_or()
+        // self.parse_equality()
+    }
+
+    fn parse_or(&mut self) -> Expr {
+        let mut left = self.parse_and();
+        loop {
+            if *self.peek() == Token::OrOr {
+                self.advance();
+                let right = self.parse_and();
+                left = Expr::Logical(Box::new(left), LogicalOp::Or, Box::new(right));
+            } else {
+                break;
+            }
+        }
+        left
+    }
+
+    fn parse_and(&mut self) -> Expr {
+        let mut left = self.parse_equality();
+        loop {
+            if *self.peek() == Token::AndAnd {
+                self.advance();
+                let right = self.parse_equality();
+                left = Expr::Logical(Box::new(left), LogicalOp::And, Box::new(right));
+            } else {
+                break;
+            }
+        }
+        left
     }
 
     fn parse_equality(&mut self) -> Expr {

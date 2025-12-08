@@ -27,6 +27,10 @@ pub enum Token {
     GtEq,
     Eq,
 
+    // Logical
+    AndAnd,
+    OrOr,
+
     // Delimiters
     LParen,
     RParen,
@@ -193,6 +197,22 @@ impl Lexer {
                     Token::GtEq
                 } else {
                     Token::Gt
+                }
+            }
+            '&' => {
+                if self.peek() == '&' {
+                    self.advance();
+                    Token::AndAnd
+                } else {
+                    panic!("Unexpected character: {}", c);
+                }
+            }
+            '|' => {
+                if self.peek() == '|' {
+                    self.advance();
+                    Token::OrOr
+                } else {
+                    panic!("Unexpected character: {}", c);
                 }
             }
             _ => panic!("Unexpected character: {}", c),

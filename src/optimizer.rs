@@ -165,6 +165,11 @@ fn fold_expr(expr: Expr) -> Expr {
             let args = args.into_iter().map(fold_expr).collect();
             Expr::Call(name, args)
         }
+        Expr::Logical(left, op, right) => {
+            let left = fold_expr(*left);
+            let right = fold_expr(*right);
+            Expr::Logical(Box::new(left), op, Box::new(right))
+        }
         _ => expr,
     }
 }

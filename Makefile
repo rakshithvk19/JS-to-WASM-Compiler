@@ -1,6 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail
-
+.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail test-negative test-comments test-logical
 COMPILER = ./target/release/compiler
 
 build:
@@ -81,6 +80,11 @@ test: build
 	@result=$$(wasmtime tests/comments.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "15" ]; then echo "PASS (got 15)"; else echo "FAIL (expected 15, got $$result)"; exit 1; \
 	fi
+	@echo ""
+	@echo "=== Testing Logical AND/OR Operators ==="
+	@$(COMPILER) tests/logical.js > tests/logical.wat
+	@result=$$(wasmtime tests/logical.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "21" ]; then echo "PASS (got 21)"; else echo "FAIL (expected 21, got $$result)"; exit 1; fi
 	@echo ""
 	@echo "=== All tests passed ==="
 
@@ -184,6 +188,12 @@ test-comments: build
 	@result=$$(wasmtime tests/comments.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "15" ]; then echo "PASS (got 15)"; else echo "FAIL (expected 15, got $$result)"; exit 1; \
 	fi
+
+test-logical: build
+	@echo "=== Testing Logical AND/OR Operators ==="
+	@$(COMPILER) tests/logical.js > tests/logical.wat
+	@result=$$(wasmtime tests/logical.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "21" ]; then echo "PASS (got 21)"; else echo "FAIL (expected 21, got $$result)"; exit 1; fi
 
 clean:
 	cargo clean

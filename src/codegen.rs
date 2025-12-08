@@ -65,6 +65,9 @@ impl CodeGen {
             self.output.push(format!("    {}", decl));
         }
 
+        // Add $_result for logical operators
+        self.output.push("    (local $_result i32)".to_string());
+
         let all_vars: Vec<String> = func.params.iter().chain(locals.iter()).cloned().collect();
 
         for stmt in &func.body {
@@ -263,6 +266,27 @@ impl CodeGen {
                 }
                 self.output.push(format!("    call ${}", name));
             }
+            Expr::Logical(left, op, right) => match op {
+                LogicalOp::And => {
+                    self.gen_expr(left, vars);
+                    self.output.push("    local.tee $_result".to_string());
+                    self.output.push("    i32.eqz".to_string());
+                    self.output.push("    if (result i32)".to_string());
+                    self.output.push("    local.get $_result".to_string());
+                    self.output.push("    else".to_string());
+                    self.gen_expr(right, vars);
+                    self.output.push("    end".to_string());
+                }
+                LogicalOp::Or => {
+                    self.gen_expr(left, vars);
+                    self.output.push("    local.tee $_result".to_string());
+                    self.output.push("    if (result i32)".to_string());
+                    self.output.push("    local.get $_result".to_string());
+                    self.output.push("    else".to_string());
+                    self.gen_expr(right, vars);
+                    self.output.push("    end".to_string());
+                }
+            },
         }
     }
 }

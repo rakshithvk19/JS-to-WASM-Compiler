@@ -5,6 +5,7 @@ pub enum Expr {
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
     Call(String, Vec<Expr>),
+    Logical(Box<Expr>, LogicalOp, Box<Expr>),
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +27,12 @@ pub enum BinOp {
 pub enum UnaryOp {
     Neg,
     Not,
+}
+
+#[derive(Debug, Clone)]
+pub enum LogicalOp {
+    And,
+    Or,
 }
 
 #[derive(Debug, Clone)]

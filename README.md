@@ -5,6 +5,7 @@ A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Ze
 ## Supported Language Subset
 
 - Integer arithmetic: `+ - * / % == != < > <= >= !`
+- Logical operators: `&&`, `||` (with short-circuit evaluation)
 - Variable declarations: `let` and `const` (with immutability enforcement)
 - Control flow: `if/else`, `while`
 - Functions with parameters and return values
@@ -56,6 +57,7 @@ make test-dead       # Dead code elimination
 make test-tail       # Tail call elimination
 make test-negative   # Negative number literals
 make test-comments   # Single-line and multi-line comments
+make test-logical    # Logical AND/OR operators
 ```
 
 ## Architecture
@@ -123,6 +125,17 @@ const x = 10;
 x = 20;  // Compiler error: Cannot reassign const variable 'x'
 ```
 
+## Logical Operators
+
+Supports `&&` (AND) and `||` (OR) with short-circuit evaluation.
+
+```javascript
+let a = 5 && 3;     // Result: 3 (both truthy, returns last)
+let b = 0 && 3;     // Result: 0 (first is falsy, returns it)
+let c = 5 || 3;     // Result: 5 (first is truthy, returns it)
+let d = 0 || 3;     // Result: 3 (first is falsy, returns second)
+```
+
 ## Source Location Comments
 
 Generated WAT includes comments mapping instructions to original JS line numbers for debugging.
@@ -145,10 +158,10 @@ local.set $x
 | `dead_code.js` | Dead code elimination | 5 |
 | `negative.js` | Negative number literals | 10 |
 | `comments.js` | Single and multi-line comments | 15 |
+| `logical.js` | Logical AND/OR operators | 21 |
 
 ## Future Improvements
 
-- [ ] Logical AND/OR operators (`&&`, `||`)
 - [ ] For loops
 - [ ] Break/Continue statements
 - [ ] Better error messages with line numbers
