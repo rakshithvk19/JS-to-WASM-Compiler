@@ -15,7 +15,6 @@ A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Ze
 
 - Rust (cargo)
 - [wasmtime](https://wasmtime.dev/) for running the output
-- Makefile
 
 ## Build
 
@@ -46,14 +45,15 @@ wasmtime --wasm tail-call output.wat --invoke _start
 Tests assert expected values automatically and fail on mismatch.
 
 ```bash
-make test          # Run all tests
-make test-fact     # Factorial (expects 120)
-make test-gcd      # GCD (expects 6)
-make test-ack      # Ackermann (expects 125)
-make test-const    # Const reassignment error
-make test-fold     # Constant folding optimization
-make test-dead     # Dead code elimination
-make test-tail     # Tail call elimination
+make test           # Run all tests
+make test-fact      # Factorial (expects 120)
+make test-gcd       # GCD (expects 6)
+make test-ack       # Ackermann (expects 125)
+make test-const     # Const reassignment error
+make test-fold      # Constant folding optimization
+make test-dead      # Dead code elimination
+make test-tail      # Tail call elimination
+make test-negative  # Negative number literals
 ```
 
 ## Architecture
@@ -83,6 +83,14 @@ Evaluates constant expressions at compile time.
 
 ```javascript
 let x = 3 + 4 * 2;  // Compiled as: i32.const 11
+```
+
+### Negative Number Folding
+Folds unary negation of constants into single negative literals.
+
+```javascript
+let x = -5;         // Compiled as: i32.const -5
+let y = 10 + -3;    // Compiled as: i32.const 7
 ```
 
 ### Dead Code Elimination
@@ -133,10 +141,10 @@ local.set $x
 | `const_error.js` | Const reassignment detection | Panic |
 | `const_fold.js` | Constant folding verification | 19 |
 | `dead_code.js` | Dead code elimination | 5 |
+| `negative.js` | Negative number literals | 10 |
 
 ## Future Improvements
 
-- [ ] Negative number literals (`-5` in lexer)
 - [ ] Multi-line comments (`/* ... */`)
 - [ ] Logical AND/OR operators (`&&`, `||`)
 - [ ] For loops

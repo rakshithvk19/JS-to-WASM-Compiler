@@ -63,6 +63,19 @@ test: build
 		echo "FAIL (no return_call instructions found)"; exit 1; \
 	fi
 	@echo ""
+	@echo "=== Testing Negative Number Literals ==="
+	@$(COMPILER) tests/negative.js > tests/negative.wat
+	@result=$$(wasmtime tests/negative.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then \
+		if grep -q "i32.const -5" tests/negative.wat; then \
+			echo "PASS (got 10, negative literals folded)"; \
+		else \
+			echo "FAIL (got 10, but negative literals not folded)"; exit 1; \
+		fi \
+	else \
+		echo "FAIL (expected 10, got $$result)"; exit 1; \
+	fi
+	@echo ""
 	@echo "=== All tests passed ==="
 
 # Individual test targets
@@ -143,6 +156,20 @@ test-tail: build
 		fi \
 	else \
 		echo "FAIL (no return_call instructions found)"; exit 1; \
+	fi
+
+test-negative: build
+	@echo "=== Testing Negative Number Literals ==="
+	@$(COMPILER) tests/negative.js > tests/negative.wat
+	@result=$$(wasmtime tests/negative.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then \
+		if grep -q "i32.const -5" tests/negative.wat; then \
+			echo "PASS (got 10, negative literals folded)"; \
+		else \
+			echo "FAIL (got 10, but negative literals not folded)"; exit 1; \
+		fi \
+	else \
+		echo "FAIL (expected 10, got $$result)"; exit 1; \
 	fi
 
 clean:
