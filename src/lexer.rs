@@ -77,6 +77,22 @@ impl Lexer {
         }
     }
 
+    fn skip_block_comment(&mut self) {
+        self.advance(); // consume '/'
+        self.advance(); // consume '*'
+        loop {
+            if self.peek() == '\0' {
+                panic!("Unterminated block comment");
+            }
+            if self.peek() == '*' && self.input.get(self.pos + 1) == Some(&'/') {
+                self.advance(); // consume '*'
+                self.advance(); // consume '/'
+                break;
+            }
+            self.advance();
+        }
+    }
+
     fn read_number(&mut self) -> i32 {
         let mut n = 0i32;
         while self.peek().is_ascii_digit() {
@@ -96,8 +112,15 @@ impl Lexer {
     pub fn next_token(&mut self) -> (Token, usize) {
         self.skip_whitespace();
 
+        // Single-line comment
         if self.peek() == '/' && self.input.get(self.pos + 1) == Some(&'/') {
             self.skip_line_comment();
+            return self.next_token();
+        }
+
+        // Multi-line comment
+        if self.peek() == '/' && self.input.get(self.pos + 1) == Some(&'*') {
+            self.skip_block_comment();
             return self.next_token();
         }
 

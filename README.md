@@ -9,6 +9,7 @@ A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Ze
 - Control flow: `if/else`, `while`
 - Functions with parameters and return values
 - Block statements `{ ... }`
+- Comments: single-line (`//`) and multi-line (`/* */`)
 - All values are 32-bit signed integers (i32)
 
 ## Requirements
@@ -45,15 +46,16 @@ wasmtime --wasm tail-call output.wat --invoke _start
 Tests assert expected values automatically and fail on mismatch.
 
 ```bash
-make test           # Run all tests
-make test-fact      # Factorial (expects 120)
-make test-gcd       # GCD (expects 6)
-make test-ack       # Ackermann (expects 125)
-make test-const     # Const reassignment error
-make test-fold      # Constant folding optimization
-make test-dead      # Dead code elimination
-make test-tail      # Tail call elimination
-make test-negative  # Negative number literals
+make test            # Run all tests
+make test-fact       # Factorial (expects 120)
+make test-gcd        # GCD (expects 6)
+make test-ack        # Ackermann (expects 125)
+make test-const      # Const reassignment error
+make test-fold       # Constant folding optimization
+make test-dead       # Dead code elimination
+make test-tail       # Tail call elimination
+make test-negative   # Negative number literals
+make test-comments   # Single-line and multi-line comments
 ```
 
 ## Architecture
@@ -142,10 +144,10 @@ local.set $x
 | `const_fold.js` | Constant folding verification | 19 |
 | `dead_code.js` | Dead code elimination | 5 |
 | `negative.js` | Negative number literals | 10 |
+| `comments.js` | Single and multi-line comments | 15 |
 
 ## Future Improvements
 
-- [ ] Multi-line comments (`/* ... */`)
 - [ ] Logical AND/OR operators (`&&`, `||`)
 - [ ] For loops
 - [ ] Break/Continue statements

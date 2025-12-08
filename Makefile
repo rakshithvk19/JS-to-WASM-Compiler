@@ -76,6 +76,12 @@ test: build
 		echo "FAIL (expected 10, got $$result)"; exit 1; \
 	fi
 	@echo ""
+	@echo "=== Testing Comments ==="
+	@$(COMPILER) tests/comments.js > tests/comments.wat
+	@result=$$(wasmtime tests/comments.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "15" ]; then echo "PASS (got 15)"; else echo "FAIL (expected 15, got $$result)"; exit 1; \
+	fi
+	@echo ""
 	@echo "=== All tests passed ==="
 
 # Individual test targets
@@ -170,6 +176,13 @@ test-negative: build
 		fi \
 	else \
 		echo "FAIL (expected 10, got $$result)"; exit 1; \
+	fi
+
+test-comments: build
+	@echo "=== Testing Comments ==="
+	@$(COMPILER) tests/comments.js > tests/comments.wat
+	@result=$$(wasmtime tests/comments.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "15" ]; then echo "PASS (got 15)"; else echo "FAIL (expected 15, got $$result)"; exit 1; \
 	fi
 
 clean:
