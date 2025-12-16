@@ -70,6 +70,31 @@ fn optimize_stmt(stmt: Stmt) -> Stmt {
             let body = Box::new(optimize_stmt(*body));
             StmtKind::While(cond, body)
         }
+        StmtKind::For(init, cond, incr, body) => {
+            let init = init.map(|i| Box::new(optimize_stmt(*i)));
+            let cond = cond.map(fold_expr);
+            let incr = incr.map(|i| Box::new(optimize_stmt(*i)));
+
+            // Dead code: for(;;0) or for with false condition
+            if let Some(Expr::Number(0)) = &cond {
+                // Condition is false - loop never executes
+                // Just execute init if present, then return empty block
+                return if let Some(init_stmt) = init {
+                    Stmt {
+                        kind: StmtKind::Block(vec![*init_stmt]),
+                        line: stmt.line,
+                    }
+                } else {
+                    Stmt {
+                        kind: StmtKind::Block(vec![]),
+                        line: stmt.line,
+                    }
+                };
+            }
+
+            let body = Box::new(optimize_stmt(*body));
+            StmtKind::For(init, cond, incr, body)
+        }
         StmtKind::Block(stmts) => StmtKind::Block(optimize_stmts(stmts)),
         StmtKind::Return(expr) => StmtKind::Return(fold_expr(expr)),
         StmtKind::Expr(expr) => StmtKind::Expr(fold_expr(expr)),

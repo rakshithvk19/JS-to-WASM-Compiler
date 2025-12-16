@@ -144,6 +144,101 @@ impl Parser {
                 let body = Box::new(self.parse_statement());
                 StmtKind::While(cond, body)
             }
+            Token::For => {
+                // ADD THIS ENTIRE BLOCK
+                self.advance();
+                self.expect(Token::LParen);
+
+                // Parse init (optional)
+                let init = if *self.peek() == Token::Semicolon {
+                    self.advance();
+                    None
+                } else {
+                    let init_stmt = if *self.peek() == Token::Let {
+                        self.advance();
+                        let name = match self.advance() {
+                            Token::Identifier(s) => s,
+                            t => panic!("Expected identifier, got {:?}", t),
+                        };
+                        self.expect(Token::Eq);
+                        let expr = self.parse_expr();
+                        self.expect(Token::Semicolon);
+                        Stmt {
+                            kind: StmtKind::Let(name, expr),
+                            line: self.peek_line(),
+                        }
+                    } else if *self.peek() == Token::Const {
+                        self.advance();
+                        let name = match self.advance() {
+                            Token::Identifier(s) => s,
+                            t => panic!("Expected identifier, got {:?}", t),
+                        };
+                        self.expect(Token::Eq);
+                        let expr = self.parse_expr();
+                        self.expect(Token::Semicolon);
+                        Stmt {
+                            kind: StmtKind::Const(name, expr),
+                            line: self.peek_line(),
+                        }
+                    } else if let Token::Identifier(_) = self.peek() {
+                        let name = match self.advance() {
+                            Token::Identifier(s) => s,
+                            _ => unreachable!(),
+                        };
+                        self.expect(Token::Eq);
+                        let expr = self.parse_expr();
+                        self.expect(Token::Semicolon);
+                        Stmt {
+                            kind: StmtKind::Assign(name, expr),
+                            line: self.peek_line(),
+                        }
+                    } else {
+                        panic!("Unexpected token in for init: {:?}", self.peek());
+                    };
+                    Some(Box::new(init_stmt))
+                };
+
+                // Parse condition (optional)
+                let cond = if *self.peek() == Token::Semicolon {
+                    self.advance();
+                    None
+                } else {
+                    let expr = self.parse_expr();
+                    self.expect(Token::Semicolon);
+                    Some(expr)
+                };
+
+                // Parse increment (optional)
+                let incr = if *self.peek() == Token::RParen {
+                    None
+                } else {
+                    // Parse as assignment statement if identifier followed by =
+                    if let Token::Identifier(_) = self.peek() {
+                        let name = match self.advance() {
+                            Token::Identifier(s) => s,
+                            _ => unreachable!(),
+                        };
+                        self.expect(Token::Eq);
+                        let expr = self.parse_expr();
+                        Some(Box::new(Stmt {
+                            kind: StmtKind::Assign(name, expr),
+                            line: self.peek_line(),
+                        }))
+                    } else {
+                        // Parse as expression statement
+                        let expr = self.parse_expr();
+                        Some(Box::new(Stmt {
+                            kind: StmtKind::Expr(expr),
+                            line: self.peek_line(),
+                        }))
+                    }
+                };
+
+                self.expect(Token::RParen);
+                let body = Box::new(self.parse_statement());
+
+                StmtKind::For(init, cond, incr, body)
+            }
             Token::LBrace => {
                 self.advance();
                 let mut stmts = Vec::new();

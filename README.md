@@ -7,7 +7,7 @@ A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Ze
 - Integer arithmetic: `+ - * / % == != < > <= >= !`
 - Logical operators: `&&`, `||` (with short-circuit evaluation)
 - Variable declarations: `let` and `const` (with immutability enforcement)
-- Control flow: `if/else`, `while`
+- Control flow: `if/else`, `while`, `for`
 - Functions with parameters and return values
 - Block statements `{ ... }`
 - Comments: single-line (`//`) and multi-line (`/* */`)
@@ -47,17 +47,23 @@ wasmtime --wasm tail-call output.wat --invoke _start
 Tests assert expected values automatically and fail on mismatch.
 
 ```bash
-make test            # Run all tests
-make test-fact       # Factorial (expects 120)
-make test-gcd        # GCD (expects 6)
-make test-ack        # Ackermann (expects 125)
-make test-const      # Const reassignment error
-make test-fold       # Constant folding optimization
-make test-dead       # Dead code elimination
-make test-tail       # Tail call elimination
-make test-negative   # Negative number literals
-make test-comments   # Single-line and multi-line comments
-make test-logical    # Logical AND/OR operators
+make test                # Run all tests
+make test-fact           # Factorial (expects 120)
+make test-gcd            # GCD (expects 6)
+make test-ack            # Ackermann (expects 125)
+make test-const          # Const reassignment error
+make test-fold           # Constant folding optimization
+make test-dead           # Dead code elimination
+make test-tail           # Tail call elimination
+make test-negative       # Negative number literals
+make test-comments       # Single-line and multi-line comments
+make test-logical        # Logical AND/OR operators
+make test-for-basic      # For loop - sum 1 to 10 (expects 55)
+make test-for-nested     # Nested for loops (expects 225)
+make test-for-empty-init # For loop with empty init (expects 10)
+make test-for-empty-incr # For loop with empty increment (expects 10)
+make test-for-factorial  # Factorial using for loop (expects 720)
+make test-for-countdown  # For loop counting down (expects 55)
 ```
 
 ## Architecture
@@ -159,15 +165,25 @@ local.set $x
 | `negative.js` | Negative number literals | 10 |
 | `comments.js` | Single and multi-line comments | 15 |
 | `logical.js` | Logical AND/OR operators | 21 |
+| `for_loop_basic.js` | For loop - sum 1 to 10 | 55 |
+| `for_loop_nested.js` | Nested for loops (5x5 multiplication table) | 225 |
+| `for_loop_empty_init.js` | For loop with empty init clause | 10 |
+| `for_loop_empty_incr.js` | For loop with empty increment clause | 10 |
+| `for_loop_factorial.js` | Factorial using for loop (6!) | 720 |
+| `for_loop_countdown.js` | For loop counting down from 10 to 1 | 55 |
 
 ## Future Improvements
 
-- [ ] For loops
+### Language Features
 - [ ] Break/Continue statements
 - [ ] Better error messages with line numbers
 - [ ] Floating point numbers (f64)
 - [ ] Arrays
 - [ ] Strings
+
+### Architectural Improvements
+- [ ] Implement Visitor pattern for AST traversal (reduces code duplication across optimizer and codegen)
+- [ ] Introduce proper IR (Intermediate Representation) between AST and WAT generation for better optimization passes
 
 ## License
 

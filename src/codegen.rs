@@ -132,6 +132,12 @@ impl CodeGen {
                 StmtKind::While(_, body) => {
                     self.collect_locals_rec(&[*body.clone()], locals);
                 }
+                StmtKind::For(init, _, _, body) => {
+                    if let Some(init_stmt) = init {
+                        self.collect_locals_rec(&[*init_stmt.clone()], locals);
+                    }
+                    self.collect_locals_rec(&[*body.clone()], locals);
+                }
                 _ => {}
             }
         }
@@ -183,6 +189,37 @@ impl CodeGen {
                 self.output.push("    i32.eqz".to_string());
                 self.output.push(format!("    br_if $break_{}", id));
                 self.gen_stmt(body, vars);
+                self.output.push(format!("    br $continue_{}", id));
+                self.output.push("    end".to_string());
+                self.output.push("    end".to_string());
+            }
+            StmtKind::For(init, cond, incr, body) => {
+                // Execute init statement if present
+                if let Some(init_stmt) = init {
+                    self.gen_stmt(init_stmt, vars);
+                }
+
+                let id = self.label_counter;
+                self.label_counter += 1;
+
+                self.output.push(format!("    block $break_{}", id));
+                self.output.push(format!("    loop $continue_{}", id));
+
+                // Check condition if present (default to true if omitted)
+                if let Some(cond_expr) = cond {
+                    self.gen_expr(cond_expr, vars);
+                    self.output.push("    i32.eqz".to_string());
+                    self.output.push(format!("    br_if $break_{}", id));
+                }
+
+                // Execute body
+                self.gen_stmt(body, vars);
+
+                // Execute increment if present
+                if let Some(incr_stmt) = incr {
+                    self.gen_stmt(incr_stmt, vars);
+                }
+
                 self.output.push(format!("    br $continue_{}", id));
                 self.output.push("    end".to_string());
                 self.output.push("    end".to_string());

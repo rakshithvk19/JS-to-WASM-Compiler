@@ -10,6 +10,7 @@ pub enum Token {
     If,
     Else,
     While,
+    For,
     Return,
 
     // Operators
@@ -148,6 +149,7 @@ impl Lexer {
                 "if" => Token::If,
                 "else" => Token::Else,
                 "while" => Token::While,
+                "for" => Token::For,
                 "return" => Token::Return,
                 _ => Token::Identifier(ident),
             };

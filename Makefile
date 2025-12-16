@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail test-negative test-comments test-logical
+.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail test-negative test-comments test-logical test-for-basic test-for-nested test-for-empty-init test-for-empty-incr test-for-factorial test-for-countdown
 COMPILER = ./target/release/compiler
 
 build:
@@ -85,6 +85,36 @@ test: build
 	@$(COMPILER) tests/logical.js > tests/logical.wat
 	@result=$$(wasmtime tests/logical.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "21" ]; then echo "PASS (got 21)"; else echo "FAIL (expected 21, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Basic ==="
+	@$(COMPILER) tests/for_loop_basic.js > tests/for_loop_basic.wat
+	@result=$$(wasmtime tests/for_loop_basic.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Nested ==="
+	@$(COMPILER) tests/for_loop_nested.js > tests/for_loop_nested.wat
+	@result=$$(wasmtime tests/for_loop_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "225" ]; then echo "PASS (got 225)"; else echo "FAIL (expected 225, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Empty Init ==="
+	@$(COMPILER) tests/for_loop_empty_init.js > tests/for_loop_empty_init.wat
+	@result=$$(wasmtime tests/for_loop_empty_init.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then echo "PASS (got 10)"; else echo "FAIL (expected 10, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Empty Increment ==="
+	@$(COMPILER) tests/for_loop_empty_incr.js > tests/for_loop_empty_incr.wat
+	@result=$$(wasmtime tests/for_loop_empty_incr.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then echo "PASS (got 10)"; else echo "FAIL (expected 10, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Factorial ==="
+	@$(COMPILER) tests/for_loop_factorial.js > tests/for_loop_factorial.wat
+	@result=$$(wasmtime tests/for_loop_factorial.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "720" ]; then echo "PASS (got 720)"; else echo "FAIL (expected 720, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing For Loop Countdown ==="
+	@$(COMPILER) tests/for_loop_countdown.js > tests/for_loop_countdown.wat
+	@result=$$(wasmtime tests/for_loop_countdown.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
 	@echo ""
 	@echo "=== All tests passed ==="
 
@@ -194,6 +224,42 @@ test-logical: build
 	@$(COMPILER) tests/logical.js > tests/logical.wat
 	@result=$$(wasmtime tests/logical.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "21" ]; then echo "PASS (got 21)"; else echo "FAIL (expected 21, got $$result)"; exit 1; fi
+
+test-for-basic: build
+	@echo "=== Testing For Loop Basic ==="
+	@$(COMPILER) tests/for_loop_basic.js > tests/for_loop_basic.wat
+	@result=$$(wasmtime tests/for_loop_basic.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+
+test-for-nested: build
+	@echo "=== Testing For Loop Nested ==="
+	@$(COMPILER) tests/for_loop_nested.js > tests/for_loop_nested.wat
+	@result=$$(wasmtime tests/for_loop_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "225" ]; then echo "PASS (got 225)"; else echo "FAIL (expected 225, got $$result)"; exit 1; fi
+
+test-for-empty-init: build
+	@echo "=== Testing For Loop Empty Init ==="
+	@$(COMPILER) tests/for_loop_empty_init.js > tests/for_loop_empty_init.wat
+	@result=$$(wasmtime tests/for_loop_empty_init.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then echo "PASS (got 10)"; else echo "FAIL (expected 10, got $$result)"; exit 1; fi
+
+test-for-empty-incr: build
+	@echo "=== Testing For Loop Empty Increment ==="
+	@$(COMPILER) tests/for_loop_empty_incr.js > tests/for_loop_empty_incr.wat
+	@result=$$(wasmtime tests/for_loop_empty_incr.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then echo "PASS (got 10)"; else echo "FAIL (expected 10, got $$result)"; exit 1; fi
+
+test-for-factorial: build
+	@echo "=== Testing For Loop Factorial ==="
+	@$(COMPILER) tests/for_loop_factorial.js > tests/for_loop_factorial.wat
+	@result=$$(wasmtime tests/for_loop_factorial.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "720" ]; then echo "PASS (got 720)"; else echo "FAIL (expected 720, got $$result)"; exit 1; fi
+
+test-for-countdown: build
+	@echo "=== Testing For Loop Countdown ==="
+	@$(COMPILER) tests/for_loop_countdown.js > tests/for_loop_countdown.wat
+	@result=$$(wasmtime tests/for_loop_countdown.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
 
 clean:
 	cargo clean

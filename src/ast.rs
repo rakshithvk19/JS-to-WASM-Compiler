@@ -48,6 +48,12 @@ pub enum StmtKind {
     Assign(String, Expr),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     While(Expr, Box<Stmt>),
+    For(
+        Option<Box<Stmt>>,
+        Option<Expr>,
+        Option<Box<Stmt>>,
+        Box<Stmt>,
+    ),
     Block(Vec<Stmt>),
     Return(Expr),
     Expr(Expr),
