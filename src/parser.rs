@@ -254,6 +254,16 @@ impl Parser {
                 self.expect(Token::Semicolon);
                 StmtKind::Return(expr)
             }
+            Token::Break => {
+                self.advance();
+                self.expect(Token::Semicolon);
+                StmtKind::Break
+            }
+            Token::Continue => {
+                self.advance();
+                self.expect(Token::Semicolon);
+                StmtKind::Continue
+            }
             Token::Identifier(_) => {
                 let name = match self.advance() {
                     Token::Identifier(s) => s,

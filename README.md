@@ -142,6 +142,36 @@ let c = 5 || 3;     // Result: 5 (first is truthy, returns it)
 let d = 0 || 3;     // Result: 3 (first is falsy, returns second)
 ```
 
+## Loop Control Flow
+
+Supports `break` and `continue` statements for loop control.
+
+### Break Statement
+Exits the current loop immediately.
+
+```javascript
+for (let i = 1; i <= 100; i = i + 1) {
+  if (i % 7 == 0) {
+    result = i;  // Found first multiple of 7
+    break;       // Exit loop
+  }
+}
+```
+
+### Continue Statement
+Skips the rest of the current iteration and proceeds to the next.
+
+```javascript
+for (let i = 1; i <= 10; i = i + 1) {
+  if (i % 3 == 0) {
+    continue;  // Skip multiples of 3
+  }
+  sum = sum + i;
+}
+```
+
+**Note**: In `for` loops, `continue` properly executes the increment before the next iteration.
+
 ## Source Location Comments
 
 Generated WAT includes comments mapping instructions to original JS line numbers for debugging.
@@ -175,7 +205,8 @@ local.set $x
 ## Future Improvements
 
 ### Language Features
-- [ ] Break/Continue statements
+- [x] For loops
+- [x] Break/Continue statements
 - [ ] Better error messages with line numbers
 - [ ] Floating point numbers (f64)
 - [ ] Arrays

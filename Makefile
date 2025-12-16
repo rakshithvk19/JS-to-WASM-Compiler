@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail test-negative test-comments test-logical test-for-basic test-for-nested test-for-empty-init test-for-empty-incr test-for-factorial test-for-countdown
+.PHONY: build test clean run test-fact test-gcd test-ack test-const test-fold test-dead test-tail test-negative test-comments test-logical test-for-basic test-for-nested test-for-empty-init test-for-empty-incr test-for-factorial test-for-countdown test-break-while test-break-for test-continue-while test-continue-for test-break-nested test-continue-nested
 COMPILER = ./target/release/compiler
 
 build:
@@ -115,6 +115,36 @@ test: build
 	@$(COMPILER) tests/for_loop_countdown.js > tests/for_loop_countdown.wat
 	@result=$$(wasmtime tests/for_loop_countdown.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Break in While Loop ==="
+	@$(COMPILER) tests/break_while.js > tests/break_while.wat
+	@result=$$(wasmtime tests/break_while.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "7" ]; then echo "PASS (got 7)"; else echo "FAIL (expected 7, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Break in For Loop ==="
+	@$(COMPILER) tests/break_for.js > tests/break_for.wat
+	@result=$$(wasmtime tests/break_for.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Continue in While Loop ==="
+	@$(COMPILER) tests/continue_while.js > tests/continue_while.wat
+	@result=$$(wasmtime tests/continue_while.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "25" ]; then echo "PASS (got 25)"; else echo "FAIL (expected 25, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Continue in For Loop ==="
+	@$(COMPILER) tests/continue_for.js > tests/continue_for.wat
+	@result=$$(wasmtime tests/continue_for.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "37" ]; then echo "PASS (got 37)"; else echo "FAIL (expected 37, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Break in Nested Loops ==="
+	@$(COMPILER) tests/break_nested.js > tests/break_nested.wat
+	@result=$$(wasmtime tests/break_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "25" ]; then echo "PASS (got 25)"; else echo "FAIL (expected 25, got $$result)"; exit 1; fi
+	@echo ""
+	@echo "=== Testing Continue in Nested Loops ==="
+	@$(COMPILER) tests/continue_nested.js > tests/continue_nested.wat
+	@result=$$(wasmtime tests/continue_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "12" ]; then echo "PASS (got 12)"; else echo "FAIL (expected 12, got $$result)"; exit 1; fi
 	@echo ""
 	@echo "=== All tests passed ==="
 
@@ -260,6 +290,42 @@ test-for-countdown: build
 	@$(COMPILER) tests/for_loop_countdown.js > tests/for_loop_countdown.wat
 	@result=$$(wasmtime tests/for_loop_countdown.wat --invoke _start 2>&1 | tail -1); \
 	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+
+test-break-while: build
+	@echo "=== Testing Break in While Loop ==="
+	@$(COMPILER) tests/break_while.js > tests/break_while.wat
+	@result=$$(wasmtime tests/break_while.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "7" ]; then echo "PASS (got 7)"; else echo "FAIL (expected 7, got $$result)"; exit 1; fi
+
+test-break-for: build
+	@echo "=== Testing Break in For Loop ==="
+	@$(COMPILER) tests/break_for.js > tests/break_for.wat
+	@result=$$(wasmtime tests/break_for.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "55" ]; then echo "PASS (got 55)"; else echo "FAIL (expected 55, got $$result)"; exit 1; fi
+
+test-continue-while: build
+	@echo "=== Testing Continue in While Loop ==="
+	@$(COMPILER) tests/continue_while.js > tests/continue_while.wat
+	@result=$$(wasmtime tests/continue_while.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "25" ]; then echo "PASS (got 25)"; else echo "FAIL (expected 25, got $$result)"; exit 1; fi
+
+test-continue-for: build
+	@echo "=== Testing Continue in For Loop ==="
+	@$(COMPILER) tests/continue_for.js > tests/continue_for.wat
+	@result=$$(wasmtime tests/continue_for.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "37" ]; then echo "PASS (got 37)"; else echo "FAIL (expected 37, got $$result)"; exit 1; fi
+
+test-break-nested: build
+	@echo "=== Testing Break in Nested Loops ==="
+	@$(COMPILER) tests/break_nested.js > tests/break_nested.wat
+	@result=$$(wasmtime tests/break_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "25" ]; then echo "PASS (got 25)"; else echo "FAIL (expected 25, got $$result)"; exit 1; fi
+
+test-continue-nested: build
+	@echo "=== Testing Continue in Nested Loops ==="
+	@$(COMPILER) tests/continue_nested.js > tests/continue_nested.wat
+	@result=$$(wasmtime tests/continue_nested.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "12" ]; then echo "PASS (got 12)"; else echo "FAIL (expected 12, got $$result)"; exit 1; fi
 
 clean:
 	cargo clean

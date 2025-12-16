@@ -56,6 +56,8 @@ pub enum StmtKind {
     ),
     Block(Vec<Stmt>),
     Return(Expr),
+    Break,
+    Continue,
     Expr(Expr),
 }
 

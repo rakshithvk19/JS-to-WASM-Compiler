@@ -12,6 +12,8 @@ pub enum Token {
     While,
     For,
     Return,
+    Break,
+    Continue,
 
     // Operators
     Plus,
@@ -151,6 +153,8 @@ impl Lexer {
                 "while" => Token::While,
                 "for" => Token::For,
                 "return" => Token::Return,
+                "break" => Token::Break,
+                "continue" => Token::Continue,
                 _ => Token::Identifier(ident),
             };
             return (tok, line);

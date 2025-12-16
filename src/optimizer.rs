@@ -97,6 +97,8 @@ fn optimize_stmt(stmt: Stmt) -> Stmt {
         }
         StmtKind::Block(stmts) => StmtKind::Block(optimize_stmts(stmts)),
         StmtKind::Return(expr) => StmtKind::Return(fold_expr(expr)),
+        StmtKind::Break => StmtKind::Break,
+        StmtKind::Continue => StmtKind::Continue,
         StmtKind::Expr(expr) => StmtKind::Expr(fold_expr(expr)),
     };
 

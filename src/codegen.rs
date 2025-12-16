@@ -6,6 +6,7 @@ pub struct CodeGen {
     functions: HashMap<String, usize>, // name -> param count
     label_counter: usize,
     consts: HashSet<String>,
+    loop_stack: Vec<usize>,
 }
 
 impl CodeGen {
@@ -15,6 +16,7 @@ impl CodeGen {
             functions: HashMap::new(),
             label_counter: 0,
             consts: HashSet::new(),
+            loop_stack: Vec::new(),
         }
     }
 
@@ -183,6 +185,8 @@ impl CodeGen {
             StmtKind::While(cond, body) => {
                 let id = self.label_counter;
                 self.label_counter += 1;
+                self.loop_stack.push(id);
+
                 self.output.push(format!("    block $break_{}", id));
                 self.output.push(format!("    loop $continue_{}", id));
                 self.gen_expr(cond, vars);
@@ -192,6 +196,8 @@ impl CodeGen {
                 self.output.push(format!("    br $continue_{}", id));
                 self.output.push("    end".to_string());
                 self.output.push("    end".to_string());
+
+                self.loop_stack.pop();
             }
             StmtKind::For(init, cond, incr, body) => {
                 // Execute init statement if present
@@ -201,9 +207,10 @@ impl CodeGen {
 
                 let id = self.label_counter;
                 self.label_counter += 1;
+                self.loop_stack.push(id);
 
                 self.output.push(format!("    block $break_{}", id));
-                self.output.push(format!("    loop $continue_{}", id));
+                self.output.push(format!("    loop $loop_{}", id));
 
                 // Check condition if present (default to true if omitted)
                 if let Some(cond_expr) = cond {
@@ -212,17 +219,21 @@ impl CodeGen {
                     self.output.push(format!("    br_if $break_{}", id));
                 }
 
-                // Execute body
+                // Wrap body in block - continue will break out of this block
+                self.output.push(format!("    block $continue_{}", id));
                 self.gen_stmt(body, vars);
+                self.output.push("    end".to_string());
 
-                // Execute increment if present
+                // Increment comes AFTER the continue target
                 if let Some(incr_stmt) = incr {
                     self.gen_stmt(incr_stmt, vars);
                 }
 
-                self.output.push(format!("    br $continue_{}", id));
+                self.output.push(format!("    br $loop_{}", id));
                 self.output.push("    end".to_string());
                 self.output.push("    end".to_string());
+
+                self.loop_stack.pop();
             }
             StmtKind::Block(stmts) => {
                 for s in stmts {
@@ -240,6 +251,20 @@ impl CodeGen {
                     // Normal return
                     self.gen_expr(expr, vars);
                     self.output.push("    return".to_string());
+                }
+            }
+            StmtKind::Break => {
+                if let Some(&loop_id) = self.loop_stack.last() {
+                    self.output.push(format!("    br $break_{}", loop_id));
+                } else {
+                    panic!("Break statement outside of loop");
+                }
+            }
+            StmtKind::Continue => {
+                if let Some(&loop_id) = self.loop_stack.last() {
+                    self.output.push(format!("    br $continue_{}", loop_id));
+                } else {
+                    panic!("Continue statement outside of loop");
                 }
             }
             StmtKind::Expr(expr) => {
