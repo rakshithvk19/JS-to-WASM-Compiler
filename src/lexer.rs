@@ -1,3 +1,5 @@
+use crate::error::{CompilerError, Result};
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Number(i32),
@@ -84,12 +86,12 @@ impl Lexer {
         }
     }
 
-    fn skip_block_comment(&mut self) {
+    fn skip_block_comment(&mut self) -> Result<()> {
         self.advance(); // consume '/'
         self.advance(); // consume '*'
         loop {
             if self.peek() == '\0' {
-                panic!("Unterminated block comment");
+                return Err(CompilerError::lexer(self.line, "Unterminated block comment".to_string()));
             }
             if self.peek() == '*' && self.input.get(self.pos + 1) == Some(&'/') {
                 self.advance(); // consume '*'
@@ -98,6 +100,7 @@ impl Lexer {
             }
             self.advance();
         }
+        Ok(())
     }
 
     fn read_number(&mut self) -> i32 {
@@ -116,7 +119,7 @@ impl Lexer {
         s
     }
 
-    pub fn next_token(&mut self) -> (Token, usize) {
+    pub fn next_token(&mut self) -> Result<(Token, usize)> {
         self.skip_whitespace();
 
         // Single-line comment
@@ -127,7 +130,7 @@ impl Lexer {
 
         // Multi-line comment
         if self.peek() == '/' && self.input.get(self.pos + 1) == Some(&'*') {
-            self.skip_block_comment();
+            self.skip_block_comment()?;
             return self.next_token();
         }
 
@@ -135,11 +138,11 @@ impl Lexer {
         let c = self.peek();
 
         if c == '\0' {
-            return (Token::Eof, line);
+            return Ok((Token::Eof, line));
         }
 
         if c.is_ascii_digit() {
-            return (Token::Number(self.read_number()), line);
+            return Ok((Token::Number(self.read_number()), line));
         }
 
         if c.is_alphabetic() || c == '_' {
@@ -157,7 +160,7 @@ impl Lexer {
                 "continue" => Token::Continue,
                 _ => Token::Identifier(ident),
             };
-            return (tok, line);
+            return Ok((tok, line));
         }
 
         self.advance();
@@ -210,7 +213,7 @@ impl Lexer {
                     self.advance();
                     Token::AndAnd
                 } else {
-                    panic!("Unexpected character: {}", c);
+                    return Err(CompilerError::lexer(line, format!("Unexpected character: {}", c)));
                 }
             }
             '|' => {
@@ -218,24 +221,24 @@ impl Lexer {
                     self.advance();
                     Token::OrOr
                 } else {
-                    panic!("Unexpected character: {}", c);
+                    return Err(CompilerError::lexer(line, format!("Unexpected character: {}", c)));
                 }
             }
-            _ => panic!("Unexpected character: {}", c),
+            _ => return Err(CompilerError::lexer(line, format!("Unexpected character: {}", c))),
         };
-        (tok, line)
+        Ok((tok, line))
     }
 
-    pub fn tokenize(&mut self) -> Vec<(Token, usize)> {
+    pub fn tokenize(&mut self) -> Result<Vec<(Token, usize)>> {
         let mut tokens = Vec::new();
         loop {
-            let (tok, line) = self.next_token();
+            let (tok, line) = self.next_token()?;
             let is_eof = tok == Token::Eof;
             tokens.push((tok, line));
             if is_eof {
                 break;
             }
         }
-        tokens
+        Ok(tokens)
     }
 }

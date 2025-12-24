@@ -7,7 +7,7 @@ A mini JavaScript to WebAssembly Text Format (.wat) compiler written in Rust. Ze
 - Integer arithmetic: `+ - * / % == != < > <= >= !`
 - Logical operators: `&&`, `||` (with short-circuit evaluation)
 - Variable declarations: `let` and `const` (with immutability enforcement)
-- Control flow: `if/else`, `while`, `for`
+- Control flow: `if/else`, `while`, `for`, `break`, `continue`
 - Functions with parameters and return values
 - Block statements `{ ... }`
 - Comments: single-line (`//`) and multi-line (`/* */`)
@@ -44,27 +44,70 @@ wasmtime --wasm tail-call output.wat --invoke _start
 
 ## Testing
 
-Tests assert expected values automatically and fail on mismatch.
+Tests are organized by category and can be run individually or in groups.
 
 ```bash
-make test                # Run all tests
-make test-fact           # Factorial (expects 120)
-make test-gcd            # GCD (expects 6)
-make test-ack            # Ackermann (expects 125)
-make test-const          # Const reassignment error
-make test-fold           # Constant folding optimization
-make test-dead           # Dead code elimination
-make test-tail           # Tail call elimination
-make test-negative       # Negative number literals
-make test-comments       # Single-line and multi-line comments
-make test-logical        # Logical AND/OR operators
-make test-for-basic      # For loop - sum 1 to 10 (expects 55)
-make test-for-nested     # Nested for loops (expects 225)
-make test-for-empty-init # For loop with empty init (expects 10)
-make test-for-empty-incr # For loop with empty increment (expects 10)
-make test-for-factorial  # Factorial using for loop (expects 720)
-make test-for-countdown  # For loop counting down (expects 55)
+# Run all tests
+make test
+
+# Run by category
+make test-basic           # All basic feature tests
+make test-loops           # All loop tests
+make test-control-flow    # All break/continue tests
+make test-optimizations   # All optimization tests
+make test-errors          # All error handling tests
 ```
+
+### Individual Test Commands
+
+<details>
+<summary>Click to expand individual test commands</summary>
+
+```bash
+# Basic features
+make test-fact
+make test-gcd
+make test-ack
+make test-comments
+make test-negative
+make test-logical
+
+# Loops
+make test-for-basic
+make test-for-nested
+make test-for-empty-init
+make test-for-empty-incr
+make test-for-factorial
+make test-for-countdown
+
+# Control flow
+make test-break-while
+make test-break-for
+make test-continue-while
+make test-continue-for
+make test-break-nested
+make test-continue-nested
+
+# Optimizations
+make test-fold
+make test-dead
+make test-tail
+
+# Errors
+make test-const-error
+make test-undefined-var
+make test-undefined-func
+make test-break-outside
+make test-continue-outside
+make test-assign-undefined
+make test-missing-semi
+make test-unexpected-token
+make test-unterminated-comment
+make test-missing-brace
+make test-missing-paren
+```
+
+</details>
 
 ## Architecture
 
@@ -73,9 +116,11 @@ make test-for-countdown  # For loop counting down (expects 55)
 ```
 src/
 ├── main.rs       # CLI entry point
+├── error.rs      # Error types and handling
 ├── lexer.rs      # Tokenization
 ├── ast.rs        # AST node definitions
 ├── parser.rs     # Recursive descent parser
+├── semantic.rs   # Semantic analysis and validation
 ├── optimizer.rs  # Constant folding & dead code elimination
 └── codegen.rs    # WAT code generation
 ```
@@ -83,7 +128,7 @@ src/
 ### Pipeline
 
 ```
-JS Source → Lexer → Tokens → Parser → AST → Optimizer → CodeGen → WAT
+JS Source → Lexer → Tokens → Parser → AST → Semantic Analyzer → Optimizer → CodeGen → WAT
 ```
 
 ## Optimizations
@@ -172,6 +217,42 @@ for (let i = 1; i <= 10; i = i + 1) {
 
 **Note**: In `for` loops, `continue` properly executes the increment before the next iteration.
 
+## Error Handling
+
+Compiler provides detailed error messages with line numbers for:
+
+### Lexer Errors
+- Unexpected characters
+- Unterminated block comments
+
+### Parser Errors  
+- Missing semicolons, braces, parentheses
+- Unexpected tokens
+- Invalid syntax
+
+### Semantic Errors
+- Undefined variables or functions
+- Const variable reassignment
+- Break/Continue outside of loops
+
+**Example error output:**
+```
+Semantic Error at line 5: Cannot reassign const variable 'x'
+```
+
+## Test Organization
+
+Tests are organized in categorized folders:
+
+```
+tests/
+├── basic/          # Core language features
+├── loops/          # For loop variations
+├── control-flow/   # Break/Continue statements  
+├── optimizations/  # Optimization verifications
+└── errors/         # Error handling tests
+```
+
 ## Source Location Comments
 
 Generated WAT includes comments mapping instructions to original JS line numbers for debugging.
@@ -201,20 +282,34 @@ local.set $x
 | `for_loop_empty_incr.js` | For loop with empty increment clause | 10 |
 | `for_loop_factorial.js` | Factorial using for loop (6!) | 720 |
 | `for_loop_countdown.js` | For loop counting down from 10 to 1 | 55 |
+| `break_while.js` | Break in while loop - find first divisible by 7 | 7 |
+| `break_for.js` | Break in for loop - sum until > 50 | 55 |
+| `continue_while.js` | Continue in while loop - sum odd numbers | 25 |
+| `continue_for.js` | Continue in for loop - skip multiples of 3 | 37 |
+| `break_nested.js` | Break in nested loops - first pair summing to 7 | 25 |
+| `continue_nested.js` | Continue in nested loops - skip evens | 12 |
 
 ## Future Improvements
 
 ### Language Features
 - [x] For loops
 - [x] Break/Continue statements
-- [ ] Better error messages with line numbers
+- [x] Better error messages with line numbers
 - [ ] Floating point numbers (f64)
 - [ ] Arrays
 - [ ] Strings
+- [ ] Objects/Structs 
+- [ ] First-class functions
+- [ ] Closures
 
 ### Architectural Improvements
 - [ ] Implement Visitor pattern for AST traversal (reduces code duplication across optimizer and codegen)
 - [ ] Introduce proper IR (Intermediate Representation) between AST and WAT generation for better optimization passes
+
+### Fullstack conversion
+- [ ] Axum REST API
+- [ ] Browser WebAssembly Execution (instantiate and run compiled WASM in browser)
+- [ ] Web Playground UI - Monaco editor, compile button, output display 
 
 ## License
 

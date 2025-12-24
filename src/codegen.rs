@@ -1,11 +1,11 @@
 use crate::ast::*;
-use std::collections::{HashMap, HashSet};
+use crate::error::Result;
+use std::collections::HashMap;
 
 pub struct CodeGen {
     output: Vec<String>,
     functions: HashMap<String, usize>, // name -> param count
     label_counter: usize,
-    consts: HashSet<String>,
     loop_stack: Vec<usize>,
 }
 
@@ -15,12 +15,11 @@ impl CodeGen {
             output: Vec::new(),
             functions: HashMap::new(),
             label_counter: 0,
-            consts: HashSet::new(),
             loop_stack: Vec::new(),
         }
     }
 
-    pub fn generate(&mut self, program: &Program) -> String {
+    pub fn generate(&mut self, program: &Program) -> Result<String> {
         // Register all functions first
         for func in &program.functions {
             self.functions.insert(func.name.clone(), func.params.len());
@@ -30,18 +29,17 @@ impl CodeGen {
 
         // Generate all functions
         for func in &program.functions {
-            self.gen_function(func);
+            self.gen_function(func)?;
         }
 
         // Generate _start function for top-level code
-        self.gen_start(&program.top_level);
+        self.gen_start(&program.top_level)?;
 
         self.output.push(")".to_string());
-        self.output.join("\n")
+        Ok(self.output.join("\n"))
     }
 
-    fn gen_function(&mut self, func: &Function) {
-        self.consts.clear();
+    fn gen_function(&mut self, func: &Function) -> Result<()> {
         let locals = self.collect_locals(&func.body, &func.params);
 
         let params: Vec<String> = func
@@ -73,15 +71,15 @@ impl CodeGen {
         let all_vars: Vec<String> = func.params.iter().chain(locals.iter()).cloned().collect();
 
         for stmt in &func.body {
-            self.gen_stmt(stmt, &all_vars);
+            self.gen_stmt(stmt, &all_vars)?;
         }
 
         self.output.push("    i32.const 0".to_string());
         self.output.push("  )".to_string());
+        Ok(())
     }
 
-    fn gen_start(&mut self, stmts: &[Stmt]) {
-        self.consts.clear();
+    fn gen_start(&mut self, stmts: &[Stmt]) -> Result<()> {
         let locals = self.collect_locals(stmts, &[]);
 
         let local_decls: Vec<String> = locals
@@ -100,11 +98,12 @@ impl CodeGen {
         self.output.push("    (local $_result i32)".to_string());
 
         for stmt in stmts {
-            self.gen_stmt_with_result(stmt, &locals);
+            self.gen_stmt_with_result(stmt, &locals)?;
         }
 
         self.output.push("    local.get $_result".to_string());
         self.output.push("  )".to_string());
+        Ok(())
     }
 
     fn collect_locals(&self, stmts: &[Stmt], exclude: &[String]) -> Vec<String> {
@@ -149,7 +148,7 @@ impl CodeGen {
         self.output.push(format!("    ;; line {}", line));
     }
 
-    fn gen_stmt(&mut self, stmt: &Stmt, vars: &[String]) {
+    fn gen_stmt(&mut self, stmt: &Stmt, vars: &[String]) -> Result<()> {
         self.emit_line_comment(stmt.line);
         match &stmt.kind {
             StmtKind::Let(name, expr) => {
@@ -157,14 +156,10 @@ impl CodeGen {
                 self.output.push(format!("    local.set ${}", name));
             }
             StmtKind::Const(name, expr) => {
-                self.consts.insert(name.clone());
                 self.gen_expr(expr, vars);
                 self.output.push(format!("    local.set ${}", name));
             }
             StmtKind::Assign(name, expr) => {
-                if self.consts.contains(name) {
-                    panic!("Cannot reassign const variable '{}'", name);
-                }
                 self.gen_expr(expr, vars);
                 self.output.push(format!("    local.set ${}", name));
             }
@@ -172,13 +167,13 @@ impl CodeGen {
                 self.gen_expr(cond, vars);
                 if else_branch.is_some() {
                     self.output.push("    if".to_string());
-                    self.gen_stmt(then_branch, vars);
+                    self.gen_stmt(then_branch, vars)?;
                     self.output.push("    else".to_string());
-                    self.gen_stmt(else_branch.as_ref().unwrap(), vars);
+                    self.gen_stmt(else_branch.as_ref().unwrap(), vars)?;
                     self.output.push("    end".to_string());
                 } else {
                     self.output.push("    if".to_string());
-                    self.gen_stmt(then_branch, vars);
+                    self.gen_stmt(then_branch, vars)?;
                     self.output.push("    end".to_string());
                 }
             }
@@ -192,7 +187,7 @@ impl CodeGen {
                 self.gen_expr(cond, vars);
                 self.output.push("    i32.eqz".to_string());
                 self.output.push(format!("    br_if $break_{}", id));
-                self.gen_stmt(body, vars);
+                self.gen_stmt(body, vars)?;
                 self.output.push(format!("    br $continue_{}", id));
                 self.output.push("    end".to_string());
                 self.output.push("    end".to_string());
@@ -202,7 +197,7 @@ impl CodeGen {
             StmtKind::For(init, cond, incr, body) => {
                 // Execute init statement if present
                 if let Some(init_stmt) = init {
-                    self.gen_stmt(init_stmt, vars);
+                    self.gen_stmt(init_stmt, vars)?;
                 }
 
                 let id = self.label_counter;
@@ -221,12 +216,12 @@ impl CodeGen {
 
                 // Wrap body in block - continue will break out of this block
                 self.output.push(format!("    block $continue_{}", id));
-                self.gen_stmt(body, vars);
+                self.gen_stmt(body, vars)?;
                 self.output.push("    end".to_string());
 
                 // Increment comes AFTER the continue target
                 if let Some(incr_stmt) = incr {
-                    self.gen_stmt(incr_stmt, vars);
+                    self.gen_stmt(incr_stmt, vars)?;
                 }
 
                 self.output.push(format!("    br $loop_{}", id));
@@ -237,7 +232,7 @@ impl CodeGen {
             }
             StmtKind::Block(stmts) => {
                 for s in stmts {
-                    self.gen_stmt(s, vars);
+                    self.gen_stmt(s, vars)?;
                 }
             }
             StmtKind::Return(expr) => {
@@ -256,15 +251,11 @@ impl CodeGen {
             StmtKind::Break => {
                 if let Some(&loop_id) = self.loop_stack.last() {
                     self.output.push(format!("    br $break_{}", loop_id));
-                } else {
-                    panic!("Break statement outside of loop");
                 }
             }
             StmtKind::Continue => {
                 if let Some(&loop_id) = self.loop_stack.last() {
                     self.output.push(format!("    br $continue_{}", loop_id));
-                } else {
-                    panic!("Continue statement outside of loop");
                 }
             }
             StmtKind::Expr(expr) => {
@@ -272,17 +263,19 @@ impl CodeGen {
                 self.output.push("    drop".to_string());
             }
         }
+        Ok(())
     }
 
-    fn gen_stmt_with_result(&mut self, stmt: &Stmt, vars: &[String]) {
+    fn gen_stmt_with_result(&mut self, stmt: &Stmt, vars: &[String]) -> Result<()> {
         self.emit_line_comment(stmt.line);
         match &stmt.kind {
             StmtKind::Expr(expr) => {
                 self.gen_expr(expr, vars);
                 self.output.push("    local.set $_result".to_string());
             }
-            _ => self.gen_stmt(stmt, vars),
+            _ => self.gen_stmt(stmt, vars)?,
         }
+        Ok(())
     }
 
     fn gen_expr(&mut self, expr: &Expr, vars: &[String]) {
