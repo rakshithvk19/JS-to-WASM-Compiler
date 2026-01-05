@@ -68,7 +68,12 @@ impl Parser {
         self.expect(Token::Function)?;
         let name = match self.advance() {
             Token::Identifier(s) => s,
-            t => return Err(CompilerError::parser(line, format!("Expected function name, got {:?}", t))),
+            t => {
+                return Err(CompilerError::parser(
+                    line,
+                    format!("Expected function name, got {:?}", t),
+                ))
+            }
         };
         self.expect(Token::LParen)?;
 
@@ -77,7 +82,12 @@ impl Parser {
             loop {
                 match self.advance() {
                     Token::Identifier(s) => params.push(s),
-                    t => return Err(CompilerError::parser(self.peek_line(), format!("Expected parameter name, got {:?}", t))),
+                    t => {
+                        return Err(CompilerError::parser(
+                            self.peek_line(),
+                            format!("Expected parameter name, got {:?}", t),
+                        ))
+                    }
                 }
                 if *self.peek() == Token::Comma {
                     self.advance();
@@ -91,6 +101,12 @@ impl Parser {
 
         let mut body = Vec::new();
         while *self.peek() != Token::RBrace {
+            if *self.peek() == Token::Eof {
+                return Err(CompilerError::parser(
+                    line,
+                    "Expected RBrace, got Eof".to_string(),
+                ));
+            }
             body.push(self.parse_statement()?);
         }
         self.expect(Token::RBrace)?;
@@ -98,6 +114,8 @@ impl Parser {
         Ok(Function {
             name,
             params,
+            param_types: None,
+            return_type: None,
             body,
             line,
         })
@@ -110,7 +128,12 @@ impl Parser {
                 self.advance();
                 let name = match self.advance() {
                     Token::Identifier(s) => s,
-                    t => return Err(CompilerError::parser(line, format!("Expected identifier, got {:?}", t))),
+                    t => {
+                        return Err(CompilerError::parser(
+                            line,
+                            format!("Expected identifier, got {:?}", t),
+                        ))
+                    }
                 };
                 self.expect(Token::Eq)?;
                 let expr = self.parse_expr()?;
@@ -121,7 +144,12 @@ impl Parser {
                 self.advance();
                 let name = match self.advance() {
                     Token::Identifier(s) => s,
-                    t => return Err(CompilerError::parser(line, format!("Expected identifier, got {:?}", t))),
+                    t => {
+                        return Err(CompilerError::parser(
+                            line,
+                            format!("Expected identifier, got {:?}", t),
+                        ))
+                    }
                 };
                 self.expect(Token::Eq)?;
                 let expr = self.parse_expr()?;
@@ -162,7 +190,12 @@ impl Parser {
                         self.advance();
                         let name = match self.advance() {
                             Token::Identifier(s) => s,
-                            t => return Err(CompilerError::parser(line, format!("Expected identifier, got {:?}", t))),
+                            t => {
+                                return Err(CompilerError::parser(
+                                    line,
+                                    format!("Expected identifier, got {:?}", t),
+                                ))
+                            }
                         };
                         self.expect(Token::Eq)?;
                         let expr = self.parse_expr()?;
@@ -175,7 +208,12 @@ impl Parser {
                         self.advance();
                         let name = match self.advance() {
                             Token::Identifier(s) => s,
-                            t => return Err(CompilerError::parser(line, format!("Expected identifier, got {:?}", t))),
+                            t => {
+                                return Err(CompilerError::parser(
+                                    line,
+                                    format!("Expected identifier, got {:?}", t),
+                                ))
+                            }
                         };
                         self.expect(Token::Eq)?;
                         let expr = self.parse_expr()?;
@@ -197,7 +235,10 @@ impl Parser {
                             line: self.peek_line(),
                         }
                     } else {
-                        return Err(CompilerError::parser(line, format!("Unexpected token in for init: {:?}", self.peek())));
+                        return Err(CompilerError::parser(
+                            line,
+                            format!("Unexpected token in for init: {:?}", self.peek()),
+                        ));
                     };
                     Some(Box::new(init_stmt))
                 };
@@ -243,6 +284,12 @@ impl Parser {
                 self.advance();
                 let mut stmts = Vec::new();
                 while *self.peek() != Token::RBrace {
+                    if *self.peek() == Token::Eof {
+                        return Err(CompilerError::parser(
+                            line,
+                            "Expected RBrace, got Eof".to_string(),
+                        ));
+                    }
                     stmts.push(self.parse_statement()?);
                 }
                 self.expect(Token::RBrace)?;
@@ -406,6 +453,10 @@ impl Parser {
                 self.advance();
                 Ok(Expr::Number(n))
             }
+            Token::NumberF32(f) => {
+                self.advance();
+                Ok(Expr::NumberF32(f))
+            }
             Token::Identifier(name) => {
                 self.advance();
                 if *self.peek() == Token::LParen {
@@ -433,7 +484,10 @@ impl Parser {
                 self.expect(Token::RParen)?;
                 Ok(expr)
             }
-            t => Err(CompilerError::parser(line, format!("Unexpected token in expression: {:?}", t))),
+            t => Err(CompilerError::parser(
+                line,
+                format!("Unexpected token in expression: {:?}", t),
+            )),
         }
     }
 }

@@ -1,10 +1,12 @@
 SHELL := /bin/bash
-.PHONY: build test clean run test-basic test-loops test-control-flow test-optimizations test-errors
+.PHONY: build test clean run test-basic test-loops test-control-flow test-optimizations test-f32 test-errors
 .PHONY: test-fact test-gcd test-ack test-comments test-negative test-logical
 .PHONY: test-for-basic test-for-nested test-for-empty-init test-for-empty-incr test-for-factorial test-for-countdown
 .PHONY: test-break-while test-break-for test-continue-while test-continue-for test-break-nested test-continue-nested
 .PHONY: test-const test-fold test-dead test-tail
 .PHONY: test-const-error test-undefined-var test-undefined-func test-break-outside test-continue-outside test-assign-undefined test-missing-semi test-unexpected-token test-unterminated-comment test-missing-brace test-missing-paren
+.PHONY: test-f32-basic-arith test-f32-literals test-f32-division test-f32-negative test-f32-comparisons test-f32-mixed-arith test-f32-mixed-comp test-f32-mixed-logical test-f32-var-inference test-f32-const-vars test-f32-func-return test-f32-func-params test-f32-func-mixed test-f32-if-cond test-f32-while test-f32-for test-f32-const-fold test-f32-dead test-f32-zero-comp test-f32-truthiness test-f32-chained
+.PHONY: test-f32-type-mismatch test-f32-modulo-error test-f32-inconsistent-return test-f32-param-mismatch
 
 COMPILER = ./target/release/compiler
 
@@ -15,7 +17,7 @@ run: build
 	@$(COMPILER) $(FILE)
 
 # Run all tests
-test: test-basic test-loops test-control-flow test-optimizations test-errors
+test: test-basic test-loops test-control-flow test-optimizations test-f32 test-errors
 	@echo ""
 	@echo "========================================="
 	@echo "=== ALL TESTS PASSED ==="
@@ -30,7 +32,13 @@ test-control-flow: build test-break-while test-break-for test-continue-while tes
 
 test-optimizations: build test-fold test-dead test-tail
 
-test-errors: build test-const-error test-undefined-var test-undefined-func test-break-outside test-continue-outside test-assign-undefined test-missing-semi test-unexpected-token test-unterminated-comment test-missing-brace test-missing-paren
+test-f32: build test-f32-basic-arith test-f32-literals test-f32-division test-f32-negative test-f32-comparisons test-f32-mixed-arith test-f32-mixed-comp test-f32-mixed-logical test-f32-var-inference test-f32-const-vars test-f32-func-return test-f32-func-params test-f32-func-mixed test-f32-if-cond test-f32-while test-f32-for test-f32-const-fold test-f32-dead test-f32-zero-comp test-f32-truthiness test-f32-chained
+	@echo ""
+	@echo "========================================="
+	@echo "=== ALL F32 TESTS PASSED ==="
+	@echo "========================================="
+
+test-errors: build test-const-error test-undefined-var test-undefined-func test-break-outside test-continue-outside test-assign-undefined test-missing-semi test-unexpected-token test-unterminated-comment test-missing-brace test-missing-paren test-f32-type-mismatch test-f32-modulo-error test-f32-inconsistent-return test-f32-param-mismatch
 
 # Basic feature tests
 test-fact: build
@@ -194,6 +202,146 @@ test-tail: build
 		echo "FAIL (no return_call instructions found)"; exit 1; \
 	fi
 
+# F32 tests
+test-f32-basic-arith: build
+	@echo "=== Testing F32 Basic Arithmetic ==="
+	@$(COMPILER) tests/f32/f32_basic_arithmetic.js > tests/f32/f32_basic_arithmetic.wat
+	@result=$$(wasmtime tests/f32/f32_basic_arithmetic.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "18.14" ]; then echo "PASS (got 18.14)"; else echo "FAIL (expected 18.14, got $$result)"; exit 1; fi
+
+test-f32-literals: build
+	@echo "=== Testing F32 Literals ==="
+	@$(COMPILER) tests/f32/f32_literals.js > tests/f32/f32_literals.wat
+	@result=$$(wasmtime tests/f32/f32_literals.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "131.64" ]; then echo "PASS (got 131.64)"; else echo "FAIL (expected 131.64, got $$result)"; exit 1; fi
+
+test-f32-division: build
+	@echo "=== Testing F32 Division ==="
+	@$(COMPILER) tests/f32/f32_division.js > tests/f32/f32_division.wat
+	@result=$$(wasmtime tests/f32/f32_division.wat --invoke _start 2>&1 | tail -1); \
+	expected="5.833333"; \
+	if echo "$$result" | grep -q "5.833"; then echo "PASS (got ~5.833333)"; else echo "FAIL (expected ~5.833333, got $$result)"; exit 1; fi
+
+test-f32-negative: build
+	@echo "=== Testing F32 Negative ==="
+	@$(COMPILER) tests/f32/f32_negative.js > tests/f32/f32_negative.wat
+	@result=$$(wasmtime tests/f32/f32_negative.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "-1.64" ] || echo "$$result" | grep -qE "^\-1\.640*[01]$$"; then \
+		echo "PASS (got ~-1.64)"; \
+	else \
+		echo "FAIL (expected ~-1.64, got $$result)"; exit 1; \
+	fi
+
+test-f32-comparisons: build
+	@echo "=== Testing F32 Comparisons ==="
+	@$(COMPILER) tests/f32/f32_comparisons.js > tests/f32/f32_comparisons.wat
+	@result=$$(wasmtime tests/f32/f32_comparisons.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "4" ]; then echo "PASS (got 4)"; else echo "FAIL (expected 4, got $$result)"; exit 1; fi
+
+test-f32-mixed-arith: build
+	@echo "=== Testing F32 Mixed Arithmetic ==="
+	@$(COMPILER) tests/f32/f32_mixed_arithmetic.js > tests/f32/f32_mixed_arithmetic.wat
+	@result=$$(wasmtime tests/f32/f32_mixed_arithmetic.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "18.14" ]; then echo "PASS (got 18.14)"; else echo "FAIL (expected 18.14, got $$result)"; exit 1; fi
+
+test-f32-mixed-comp: build
+	@echo "=== Testing F32 Mixed Comparison ==="
+	@$(COMPILER) tests/f32/f32_mixed_comparison.js > tests/f32/f32_mixed_comparison.wat
+	@result=$$(wasmtime tests/f32/f32_mixed_comparison.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "4" ]; then echo "PASS (got 4)"; else echo "FAIL (expected 4, got $$result)"; exit 1; fi
+
+test-f32-mixed-logical: build
+	@echo "=== Testing F32 Mixed Logical ==="
+	@$(COMPILER) tests/f32/f32_mixed_logical.js > tests/f32/f32_mixed_logical.wat
+	@result=$$(wasmtime tests/f32/f32_mixed_logical.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "9.14" ]; then echo "PASS (got 9.14)"; else echo "FAIL (expected 9.14, got $$result)"; exit 1; fi
+
+test-f32-var-inference: build
+	@echo "=== Testing F32 Variable Type Inference ==="
+	@$(COMPILER) tests/f32/f32_variable_type_inference.js > tests/f32/f32_variable_type_inference.wat
+	@result=$$(wasmtime tests/f32/f32_variable_type_inference.wat --invoke _start 2>&1 | tail -1); \
+	if echo "$$result" | grep -q "16.42"; then echo "PASS (got ~16.42)"; else echo "FAIL (expected ~16.42, got $$result)"; exit 1; fi
+
+test-f32-const-vars: build
+	@echo "=== Testing F32 Const Variables ==="
+	@$(COMPILER) tests/f32/f32_const_variables.js > tests/f32/f32_const_variables.wat
+	@result=$$(wasmtime tests/f32/f32_const_variables.wat --invoke _start 2>&1 | tail -1); \
+	if echo "$$result" | grep -q "109.955"; then echo "PASS (got ~109.95565)"; else echo "FAIL (expected ~109.95565, got $$result)"; exit 1; fi
+
+test-f32-func-return: build
+	@echo "=== Testing F32 Function Return ==="
+	@$(COMPILER) tests/f32/f32_function_return.js > tests/f32/f32_function_return.wat
+	@result=$$(wasmtime tests/f32/f32_function_return.wat --invoke _start 2>&1 | tail -1); \
+	if echo "$$result" | grep -q "6.28318"; then echo "PASS (got ~6.28318)"; else echo "FAIL (expected ~6.28318, got $$result)"; exit 1; fi
+
+test-f32-func-params: build
+	@echo "=== Testing F32 Function Params ==="
+	@$(COMPILER) tests/f32/f32_function_params.js > tests/f32/f32_function_params.wat
+	@result=$$(wasmtime tests/f32/f32_function_params.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "25" ]; then echo "PASS (got 25)"; else echo "FAIL (expected 25, got $$result)"; exit 1; fi
+
+test-f32-func-mixed: build
+	@echo "=== Testing F32 Function Mixed Params ==="
+	@$(COMPILER) tests/f32/f32_function_mixed_params.js > tests/f32/f32_function_mixed_params.wat
+	@result=$$(wasmtime tests/f32/f32_function_mixed_params.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "20.64" ]; then echo "PASS (got 20.64)"; else echo "FAIL (expected 20.64, got $$result)"; exit 1; fi
+
+test-f32-if-cond: build
+	@echo "=== Testing F32 If Condition ==="
+	@$(COMPILER) tests/f32/f32_if_condition.js > tests/f32/f32_if_condition.wat
+	@result=$$(wasmtime tests/f32/f32_if_condition.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "18" ]; then echo "PASS (got 18)"; else echo "FAIL (expected 18, got $$result)"; exit 1; fi
+
+test-f32-while: build
+	@echo "=== Testing F32 While Loop ==="
+	@$(COMPILER) tests/f32/f32_while_loop.js > tests/f32/f32_while_loop.wat
+	@result=$$(wasmtime tests/f32/f32_while_loop.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "15" ]; then echo "PASS (got 15)"; else echo "FAIL (expected 15, got $$result)"; exit 1; fi
+
+test-f32-for: build
+	@echo "=== Testing F32 For Loop ==="
+	@$(COMPILER) tests/f32/f32_for_loop.js > tests/f32/f32_for_loop.wat
+	@result=$$(wasmtime tests/f32/f32_for_loop.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "10" ]; then echo "PASS (got 10)"; else echo "FAIL (expected 10, got $$result)"; exit 1; fi
+
+test-f32-const-fold: build
+	@echo "=== Testing F32 Constant Folding ==="
+	@$(COMPILER) tests/f32/f32_constant_folding.js > tests/f32/f32_constant_folding.wat
+	@result=$$(wasmtime tests/f32/f32_constant_folding.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "21" ]; then \
+		if grep -q "f32.const 7" tests/f32/f32_constant_folding.wat && grep -q "f32.const 8" tests/f32/f32_constant_folding.wat && grep -q "f32.const 6" tests/f32/f32_constant_folding.wat; then \
+			echo "PASS (got 21, f32 constants folded)"; \
+		else \
+			echo "FAIL (got 21, but f32 constants not folded)"; exit 1; \
+		fi \
+	else \
+		echo "FAIL (expected 21, got $$result)"; exit 1; \
+	fi
+
+test-f32-dead: build
+	@echo "=== Testing F32 Dead Code Elimination ==="
+	@$(COMPILER) tests/f32/f32_dead_code.js > tests/f32/f32_dead_code.wat
+	@result=$$(wasmtime tests/f32/f32_dead_code.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "5" ]; then echo "PASS (got 5, f32 dead code eliminated)"; else echo "FAIL (expected 5, got $$result)"; exit 1; fi
+
+test-f32-zero-comp: build
+	@echo "=== Testing F32 Zero Comparison ==="
+	@$(COMPILER) tests/f32/f32_zero_comparison.js > tests/f32/f32_zero_comparison.wat
+	@result=$$(wasmtime tests/f32/f32_zero_comparison.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "3" ]; then echo "PASS (got 3)"; else echo "FAIL (expected 3, got $$result)"; exit 1; fi
+
+test-f32-truthiness: build
+	@echo "=== Testing F32 Truthiness ==="
+	@$(COMPILER) tests/f32/f32_truthiness.js > tests/f32/f32_truthiness.wat
+	@result=$$(wasmtime tests/f32/f32_truthiness.wat --invoke _start 2>&1 | tail -1); \
+	if [ "$$result" = "20" ]; then echo "PASS (got 20)"; else echo "FAIL (expected 20, got $$result)"; exit 1; fi
+
+test-f32-chained: build
+	@echo "=== Testing F32 Chained Operations ==="
+	@$(COMPILER) tests/f32/f32_chained_operations.js > tests/f32/f32_chained_operations.wat
+	@result=$$(wasmtime tests/f32/f32_chained_operations.wat --invoke _start 2>&1 | tail -1); \
+	if echo "$$result" | grep -q "106.9"; then echo "PASS (got ~106.92)"; else echo "FAIL (expected ~106.92, got $$result)"; exit 1; fi
+
 # Error tests
 test-const-error: build
 	@echo "=== Testing Const Reassignment Error ==="
@@ -301,6 +449,61 @@ test-missing-brace: build
 		echo "PASS (missing brace error detected)"; \
 	else \
 		echo "FAIL (missing brace not detected)"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
+
+test-missing-paren: build
+	@echo "=== Testing Missing Paren Error ==="
+	@output=$$($(COMPILER) tests/errors/missing_paren.js 2>&1 || true); \
+	if echo "$$output" | grep -q "Expected.*RParen"; then \
+		echo "PASS (missing paren error detected)"; \
+	else \
+		echo "FAIL (missing paren not detected)"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
+
+test-f32-type-mismatch: build
+	@echo "=== Testing F32 Type Mismatch Assignment Error ==="
+	@output=$$($(COMPILER) tests/errors/f32_type_mismatch_assignment.js 2>&1 || true); \
+	if echo "$$output" | grep -q "Type mismatch" || echo "$$output" | grep -q "cannot assign"; then \
+		echo "PASS (f32 type mismatch error detected)"; \
+	else \
+		echo "FAIL (f32 type mismatch not detected)"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
+
+test-f32-modulo-error: build
+	@echo "=== Testing F32 Modulo Error ==="
+	@output=$$($(COMPILER) tests/errors/f32_modulo_error.js 2>&1 || true); \
+	if echo "$$output" | grep -q "Modulo" || echo "$$output" | grep -q "not supported"; then \
+		echo "PASS (f32 modulo error detected)"; \
+	else \
+		echo "FAIL (f32 modulo error not detected)"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
+
+test-f32-inconsistent-return: build
+	@echo "=== Testing F32 Inconsistent Return Error ==="
+	@output=$$($(COMPILER) tests/errors/f32_inconsistent_return.js 2>&1 || true); \
+	if echo "$$output" | grep -q "Inconsistent return" || echo "$$output" | grep -q "return type"; then \
+		echo "PASS (f32 inconsistent return error detected)"; \
+	else \
+		echo "FAIL (f32 inconsistent return error not detected)"; \
+		echo "$$output"; \
+		exit 1; \
+	fi
+
+test-f32-param-mismatch: build
+	@echo "=== Testing F32 Function Param Mismatch Error ==="
+	@output=$$($(COMPILER) tests/errors/f32_function_param_mismatch.js 2>&1 || true); \
+	if echo "$$output" | grep -q "parameter.*type mismatch" || echo "$$output" | grep -q "expected.*got"; then \
+		echo "PASS (f32 param mismatch error detected)"; \
+	else \
+		echo "FAIL (f32 param mismatch error not detected)"; \
 		echo "$$output"; \
 		exit 1; \
 	fi

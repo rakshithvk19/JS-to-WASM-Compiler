@@ -1,6 +1,13 @@
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum Type {
+    I32,
+    F32,
+}
+
 #[derive(Debug, Clone)]
 pub enum Expr {
     Number(i32),
+    NumberF32(f32),
     Identifier(String),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
@@ -65,6 +72,8 @@ pub enum StmtKind {
 pub struct Function {
     pub name: String,
     pub params: Vec<String>,
+    pub param_types: Option<Vec<Type>>,
+    pub return_type: Option<Type>,
     pub body: Vec<Stmt>,
     pub line: usize,
 }

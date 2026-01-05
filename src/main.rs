@@ -43,7 +43,7 @@ fn compile(input: &str) -> error::Result<String> {
     let mut program = parser.parse_program()?;
 
     let mut analyzer = SemanticAnalyzer::new();
-    analyzer.analyze(&program)?;
+    analyzer.analyze(&mut program)?;
 
     optimize_program(&mut program);
 
